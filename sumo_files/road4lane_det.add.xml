@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Inductive Loop Detectors cho map road4lane
+  Edge A: edge_A1 (0→500m) + edge_A2 (500→1000m)
+  Edge B: edge_B1 (1000→500m) + edge_B2 (500→0m)
+
+  Detectors đặt tại:
+    - Det U (Upstream A)  : edge_A1 pos=200  (~200m từ đầu)
+    - Det M (Mid A)       : edge_A1 pos=400  (~400m) hoặc edge_A2 pos=0
+    - Det D (Downstream A): edge_A2 pos=400  (~900m tổng)
+    Tương tự cho B (ngược chiều)
+-->
+<additional>
+
+  <!-- ===== CHIỀU A: West → East ===== -->
+  <!-- Upstream: 200m trên edge_A1 -->
+  <inductionLoop id="det_A_up_L0"  lane="edge_A1_0" pos="200" freq="30" file="NUL" friendlyPos="true"/>
+  <inductionLoop id="det_A_up_L1"  lane="edge_A1_1" pos="200" freq="30" file="NUL" friendlyPos="true"/>
+  <!-- Mid: 400m trên edge_A1 (ngay trước junction n2) -->
+  <inductionLoop id="det_A_mid_L0" lane="edge_A1_0" pos="400" freq="30" file="NUL" friendlyPos="true"/>
+  <inductionLoop id="det_A_mid_L1" lane="edge_A1_1" pos="400" freq="30" file="NUL" friendlyPos="true"/>
+  <!-- Downstream: 400m trên edge_A2 (~900m tổng) -->
+  <inductionLoop id="det_A_dn_L0"  lane="edge_A2_0" pos="400" freq="30" file="NUL" friendlyPos="true"/>
+  <inductionLoop id="det_A_dn_L1"  lane="edge_A2_1" pos="400" freq="30" file="NUL" friendlyPos="true"/>
+
+  <!-- ===== CHIỀU B: East → West ===== -->
+  <!-- Upstream: 200m trên edge_B1 (tính từ n3) -->
+  <inductionLoop id="det_B_up_L0"  lane="edge_B1_0" pos="200" freq="30" file="NUL" friendlyPos="true"/>
+  <inductionLoop id="det_B_up_L1"  lane="edge_B1_1" pos="200" freq="30" file="NUL" friendlyPos="true"/>
+  <!-- Mid: 400m trên edge_B1 -->
+  <inductionLoop id="det_B_mid_L0" lane="edge_B1_0" pos="400" freq="30" file="NUL" friendlyPos="true"/>
+  <inductionLoop id="det_B_mid_L1" lane="edge_B1_1" pos="400" freq="30" file="NUL" friendlyPos="true"/>
+  <!-- Downstream: 400m trên edge_B2 -->
+  <inductionLoop id="det_B_dn_L0"  lane="edge_B2_0" pos="400" freq="30" file="NUL" friendlyPos="true"/>
+  <inductionLoop id="det_B_dn_L1"  lane="edge_B2_1" pos="400" freq="30" file="NUL" friendlyPos="true"/>
+
+</additional>

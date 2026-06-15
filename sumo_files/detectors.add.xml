@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Inductive Loop Detectors (e1)
+  Positions: 200m, 500m, 800m trên cả 2 chiều, 2 làn mỗi chiều
+  freq="30" → ghi mỗi 30 giây
+-->
+<additional xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+            xsi:noNamespaceSchemaLocation="http://sumo.dlr.de/xsd/additional_file.xsd">
+
+  <!-- ===== Detector chiều A (East) ===== -->
+  <!-- Vị trí 200m -->
+  <inductionLoop id="det_A_200_L0" lane="edgeA_0" pos="200" freq="30" file="detectors_A.xml" friendlyPos="true"/>
+  <inductionLoop id="det_A_200_L1" lane="edgeA_1" pos="200" freq="30" file="detectors_A.xml" friendlyPos="true"/>
+  <!-- Vị trí 500m -->
+  <inductionLoop id="det_A_500_L0" lane="edgeA_0" pos="500" freq="30" file="detectors_A.xml" friendlyPos="true"/>
+  <inductionLoop id="det_A_500_L1" lane="edgeA_1" pos="500" freq="30" file="detectors_A.xml" friendlyPos="true"/>
+  <!-- Vị trí 800m -->
+  <inductionLoop id="det_A_800_L0" lane="edgeA_0" pos="800" freq="30" file="detectors_A.xml" friendlyPos="true"/>
+  <inductionLoop id="det_A_800_L1" lane="edgeA_1" pos="800" freq="30" file="detectors_A.xml" friendlyPos="true"/>
+
+  <!-- ===== Detector chiều B (West) ===== -->
+  <!-- Vị trí 200m (tính từ đầu edgeB = phía East) -->
+  <inductionLoop id="det_B_200_L0" lane="edgeB_0" pos="200" freq="30" file="detectors_B.xml" friendlyPos="true"/>
+  <inductionLoop id="det_B_200_L1" lane="edgeB_1" pos="200" freq="30" file="detectors_B.xml" friendlyPos="true"/>
+  <!-- Vị trí 500m -->
+  <inductionLoop id="det_B_500_L0" lane="edgeB_0" pos="500" freq="30" file="detectors_B.xml" friendlyPos="true"/>
+  <inductionLoop id="det_B_500_L1" lane="edgeB_1" pos="500" freq="30" file="detectors_B.xml" friendlyPos="true"/>
+  <!-- Vị trí 800m -->
+  <inductionLoop id="det_B_800_L0" lane="edgeB_0" pos="800" freq="30" file="detectors_B.xml" friendlyPos="true"/>
+  <inductionLoop id="det_B_800_L1" lane="edgeB_1" pos="800" freq="30" file="detectors_B.xml" friendlyPos="true"/>
+
+</additional>

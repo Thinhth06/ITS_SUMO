@@ -1,0 +1,11 @@
+<routes>
+    <vType id="car" accel="2.6" decel="4.5" length="5" maxSpeed="13.89"/>
+
+    <!-- Chiều A: trái → phải -->
+    <flow id="flow_A" type="car" begin="0" end="600" number="400"
+          from="edge_A1" to="edge_A2"/>
+
+    <!-- Chiều B: phải → trái -->
+    <flow id="flow_B" type="car" begin="0" end="600" number="400"
+          from="edge_B1" to="edge_B2"/>
+</routes>

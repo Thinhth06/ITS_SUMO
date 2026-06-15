@@ -1,0 +1,9 @@
+<edges>
+    <!-- Chiều A: Tây→Đông (trái→phải), 2 làn -->
+    <edge id="edge_A1" from="nA1" to="nA2" numLanes="2" speed="13.89"/>
+    <edge id="edge_A2" from="nA2" to="nA3" numLanes="2" speed="13.89"/>
+
+    <!-- Chiều B: Đông→Tây (phải→trái), 2 làn — đường riêng biệt -->
+    <edge id="edge_B1" from="nB1" to="nB2" numLanes="2" speed="13.89"/>
+    <edge id="edge_B2" from="nB2" to="nB3" numLanes="2" speed="13.89"/>
+</edges>

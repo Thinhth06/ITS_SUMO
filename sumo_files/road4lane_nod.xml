@@ -1,0 +1,11 @@
+<nodes>
+    <!-- Chiều A: y=10 (đường trên) -->
+    <node id="nA1" x="0"    y="10"/>
+    <node id="nA2" x="500"  y="10"/>
+    <node id="nA3" x="1000" y="10"/>
+
+    <!-- Chiều B: y=-10 (đường dưới, ngược chiều) -->
+    <node id="nB1" x="1000" y="-10"/>
+    <node id="nB2" x="500"  y="-10"/>
+    <node id="nB3" x="0"    y="-10"/>
+</nodes>

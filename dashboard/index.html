@@ -1,0 +1,1375 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SUMO ITS Dashboard — road4lane</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Times+New+Roman&display=swap');
+:root{
+  --bg:#111827;--bg2:#1F2937;--bg3:#1F2937;
+  --panel:#1F2937;--panel2:#374151;
+  --border:#374151;--border2:#4B5563;
+  --accent:#60A5FA;--accent2:#3B82F6;
+  --green:#10B981;--red:#EF4444;--amber:#F59E0B;--cyan:#60A5FA;
+  --text:#F9FAFB;--muted:#9CA3AF;
+  --mono:'Times New Roman',Times,serif;--head:'Times New Roman',Times,serif;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--text);font-family:'Times New Roman',Times,serif;font-size:13px;min-height:100vh;overflow-x:hidden}
+.scanline{display:none}
+
+/* Header */
+header{background:var(--bg2);border-bottom:1px solid var(--border2);padding:10px 20px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100}
+.logo{font-family:'Times New Roman',Times,serif;font-size:17px;font-weight:700;color:var(--accent)}
+.hbar{display:flex;gap:10px;align-items:center}
+.badge{font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;padding:3px 8px;border-radius:4px;background:var(--panel2);border:1px solid var(--border2);color:var(--muted)}
+.badge.green{background:rgba(16,185,129,.15);border-color:rgba(16,185,129,.4);color:var(--green)}
+.badge.red{background:rgba(239,68,68,.15);border-color:rgba(239,68,68,.4);color:var(--red)}
+.badge.amber{background:rgba(245,158,11,.15);border-color:rgba(245,158,11,.4);color:var(--amber)}
+.badge.cyan{background:rgba(96,165,250,.15);border-color:rgba(96,165,250,.4);color:var(--cyan)}
+
+/* Layout */
+.layout{display:grid;grid-template-columns:260px 1fr;min-height:calc(100vh - 45px)}
+.sidebar{background:var(--bg2);border-right:1px solid var(--border);padding:14px;display:flex;flex-direction:column;gap:14px;overflow-y:auto}
+.slabel{font-size:10px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--muted);margin-bottom:6px}
+.ctrl{display:flex;flex-direction:column;gap:4px}
+.ctrl label{font-size:11px;color:var(--muted);display:flex;justify-content:space-between}
+.ctrl label span{color:var(--accent);font-weight:700}
+input[type=range]{width:100%;height:4px;-webkit-appearance:none;background:var(--panel2);border-radius:2px}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:13px;height:13px;border-radius:50%;background:var(--accent);cursor:pointer}
+input[type=number]{width:100%;background:var(--panel2);border:1px solid var(--border2);color:var(--text);font-family:'Times New Roman',Times,serif;font-size:13px;font-weight:700;padding:7px 10px;border-radius:4px;outline:none;text-align:center}
+input[type=number]:focus{border-color:var(--accent)}
+select{width:100%;background:var(--panel2);border:1px solid var(--border2);color:var(--text);font-family:'Times New Roman',Times,serif;font-size:12px;padding:6px 8px;border-radius:4px;outline:none}
+.btn{width:100%;padding:9px;border-radius:5px;font-family:'Times New Roman',Times,serif;font-size:12px;font-weight:700;letter-spacing:1px;text-transform:uppercase;cursor:pointer;border:none;transition:all .15s}
+.btn-primary{background:var(--accent2);color:#fff}
+.btn-primary:hover:not(:disabled){background:#2563EB}
+.btn-primary:disabled{opacity:.4;cursor:not-allowed}
+.btn-start{background:#10B981;color:#fff;font-weight:700}
+.btn-start:hover:not(:disabled){background:#059669}
+.btn-start:disabled{opacity:.4;cursor:not-allowed}
+.btn-stop{background:var(--red);color:#fff}
+.btn-stop:disabled{opacity:.4;cursor:not-allowed}
+.btn-ghost{background:transparent;color:var(--muted);border:1px solid var(--border2)}
+.btn-ghost:hover:not(:disabled){color:var(--text);border-color:var(--accent)}
+.btn-ghost:disabled{opacity:.3;cursor:not-allowed}
+.btn-csv{background:#10B981;color:#fff}
+.btn-csv:disabled{opacity:.4;cursor:not-allowed}
+
+/* Progress bar */
+.sim-progress{width:100%;height:5px;background:var(--panel2);border-radius:3px;overflow:hidden;margin-top:4px}
+.sim-progress-fill{height:100%;border-radius:3px;background:var(--accent);transition:width .5s ease;width:0%}
+.phase-label{font-size:10px;display:flex;justify-content:space-between;margin-top:4px;color:var(--muted)}
+
+/* Main */
+.main{padding:14px;display:flex;flex-direction:column;gap:14px;overflow-y:auto}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+
+/* Canvas */
+.canvas-panel{background:var(--bg3);border:1px solid var(--border);border-radius:6px;overflow:hidden}
+.cpanel-hdr{background:var(--panel2);border-bottom:1px solid var(--border);padding:7px 12px;display:flex;align-items:center;justify-content:space-between}
+.cpanel-title{font-size:11px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--accent)}
+.canvas-wrap{height:280px;background:#1a1a2e;position:relative}
+#roadCanvas{width:100%;height:100%;display:block}
+.canvas-legend{padding:5px 12px;border-top:1px solid var(--border);display:flex;gap:12px;font-size:10px;color:var(--muted);background:var(--bg2);flex-wrap:wrap;align-items:center}
+
+/* Metrics */
+.info-col{display:flex;flex-direction:column;gap:10px}
+.mgrid{display:grid;grid-template-columns:1fr 1fr;gap:7px}
+.mcard{background:var(--panel2);border:1px solid var(--border);border-radius:6px;padding:10px}
+.mlabel{font-size:10px;color:var(--muted);letter-spacing:1px;text-transform:uppercase;margin-bottom:4px}
+.mval{font-size:19px;font-weight:700;font-family:'Times New Roman',Times,serif}
+.mval.blue{color:var(--accent)}.mval.green{color:var(--green)}.mval.amber{color:var(--amber)}.mval.red{color:var(--red)}
+.msub{font-size:10px;color:var(--muted);margin-top:2px}
+
+/* Alert */
+.alert-panel{background:var(--panel2);border:1px solid var(--border);border-radius:6px;padding:10px}
+.alog{height:80px;overflow-y:auto;display:flex;flex-direction:column;gap:3px}
+.aitem{font-size:11px;display:flex;gap:8px}
+.atime{color:var(--muted);min-width:44px}.amsg{color:var(--text)}
+.amsg.warn{color:var(--amber)}.amsg.danger{color:var(--red)}.amsg.ok{color:var(--green)}.amsg.info{color:var(--cyan)}
+
+/* Detector */
+.det-panel{background:var(--bg3);border:1px solid var(--border);border-radius:6px;overflow:hidden}
+.det-hdr{background:var(--panel2);border-bottom:1px solid var(--border);padding:7px 12px;display:flex;justify-content:space-between;align-items:center}
+.det-title{font-size:11px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--accent)}
+.det-body{display:grid;grid-template-columns:1fr 1fr}
+.det-col{padding:8px}
+.det-col-hdr{font-size:10px;padding:4px 0 7px;border-bottom:1px solid var(--border);margin-bottom:7px}
+.det-col:first-child{border-right:1px solid var(--border)}
+.det-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:5px}
+.det-card{background:var(--bg2);border:1px solid var(--border);border-radius:4px;padding:6px;transition:border-color .3s}
+.det-card.alert{border-color:var(--red)}
+.det-id{font-size:9px;color:var(--muted);margin-bottom:2px}
+.det-val{font-size:12px;font-weight:700;color:var(--accent)}
+.det-sub{font-size:9px;color:var(--muted);margin-top:1px}
+
+/* Charts */
+.charts-row{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px}
+.chart-card{background:var(--bg3);border:1px solid var(--border);border-radius:6px;overflow:hidden}
+.chart-hdr{background:var(--panel2);border-bottom:1px solid var(--border);padding:7px 12px;display:flex;justify-content:space-between;align-items:center}
+.chart-title{font-size:11px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--accent)}
+.chart-body{padding:8px;height:180px;position:relative}
+
+/* Analysis modal */
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:500;display:none;align-items:center;justify-content:center}
+.overlay.show{display:flex}
+.modal{background:var(--bg2);border:1px solid var(--border2);border-radius:8px;width:min(900px,95vw);max-height:90vh;overflow-y:auto;padding:24px;position:relative}
+.modal-close{position:absolute;top:14px;right:14px;background:none;border:none;color:var(--muted);font-size:18px;cursor:pointer}
+.modal-close:hover{color:var(--text)}
+.modal-title{font-family:'Times New Roman',Times,serif;font-size:20px;font-weight:700;margin-bottom:4px;color:var(--text)}
+.modal-sub{font-size:12px;color:var(--muted);margin-bottom:20px}
+.analysis-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:20px}
+.an-card{background:var(--panel2);border:1px solid var(--border);border-radius:6px;padding:12px;text-align:center}
+.an-label{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:6px}
+.an-normal{font-size:14px;color:var(--accent);margin-bottom:2px}
+.an-incident{font-size:14px;color:var(--amber);margin-bottom:4px}
+.an-pct{font-size:18px;font-weight:700;font-family:'Times New Roman',Times,serif}
+.an-pct.neg{color:var(--red)}.an-pct.pos{color:var(--green)}.an-pct.neu{color:var(--muted)}
+.an-chart-row{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:16px}
+.an-chart-box{background:var(--bg3);border:1px solid var(--border);border-radius:6px;padding:10px}
+.an-chart-title{font-size:11px;color:var(--muted);margin-bottom:6px;font-weight:700;text-transform:uppercase;letter-spacing:1px}
+.an-chart-body{height:160px;position:relative}
+.modal-footer{display:flex;gap:10px;justify-content:flex-end;margin-top:8px}
+
+/* WS dot */
+.wsdot{width:7px;height:7px;border-radius:50%;background:var(--muted);display:inline-block;margin-right:4px}
+.wsdot.connected{background:var(--green)}
+.wsdot.connecting{background:var(--amber);animation:pulse 1s ease-in-out infinite}
+.wsdot.error{background:var(--red)}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+.pulsing{animation:pulse 1.5s ease-in-out infinite}
+
+::-webkit-scrollbar{width:4px;height:4px}
+::-webkit-scrollbar-track{background:var(--bg)}
+::-webkit-scrollbar-thumb{background:var(--panel2);border-radius:2px}
+
+/* Idle overlay on canvas */
+.canvas-idle{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;background:rgba(17,24,39,.85);z-index:10;gap:8px}
+.canvas-idle.hidden{display:none}
+.canvas-idle-icon{font-size:36px}
+.canvas-idle-txt{font-size:13px;color:var(--muted);text-align:center;font-family:'Times New Roman',Times,serif}
+</style>
+</head>
+<body>
+
+
+<header>
+  <div class="logo">ITS / SUMO <span style="font-size:11px;font-family:var(--mono);-webkit-text-fill-color:var(--muted)">road4lane · n1↔n2↔n3</span></div>
+  <div class="hbar">
+    <span class="badge" id="wsBadge"><span class="wsdot" id="wsDot"></span>OFFLINE</span>
+    <span class="badge" id="phaseBadge">IDLE</span>
+    <span class="badge green">CALIFORNIA ALGO v2</span>
+    <span style="color:var(--muted);font-size:11px" id="clockEl">t = 0.0 / 0s</span>
+  </div>
+</header>
+
+<div class="layout">
+<!-- ══ SIDEBAR ══════════════════════════════════════════════════════ -->
+<div class="sidebar">
+
+  <!-- Connection -->
+  <div>
+    <div class="slabel">WebSocket</div>
+    <div class="ctrl" style="margin-bottom:8px">
+      <select id="wsUrl">
+        <option value="ws://localhost:8000/ws">ws://localhost:8000/ws</option>
+        <option value="ws://127.0.0.1:8000/ws">ws://127.0.0.1:8000/ws</option>
+      </select>
+    </div>
+    <div style="display:flex;gap:6px">
+      <button class="btn btn-primary" id="btnConn" style="flex:1">⚡ Kết nối</button>
+      <button class="btn btn-ghost"   id="btnDisco" disabled style="flex:1">✕ Ngắt</button>
+    </div>
+  </div>
+
+  <!-- Simulation control -->
+  <div>
+    <div class="slabel">Điều khiển mô phỏng</div>
+    <div class="ctrl" style="margin-bottom:8px">
+      <label>Thời gian chạy (giây)</label>
+      <input type="number" id="simDuration" value="300" min="30" max="3600" step="30">
+    </div>
+    <div style="font-size:10px;color:var(--muted);margin-bottom:8px;line-height:1.6">
+      Tai nạn sẽ xảy ra <span style="color:var(--amber)">ngẫu nhiên</span> ở<br>
+      một chiều, chặn <span style="color:var(--red)">cả 2 làn</span>.
+    </div>
+    <div style="display:flex;flex-direction:column;gap:6px">
+      <button class="btn btn-start" id="btnStart" disabled>▶ BẮT ĐẦU MÔ PHỎNG</button>
+      <button class="btn btn-stop"  id="btnStop"  disabled>■ DỪNG</button>
+    </div>
+    <!-- Progress -->
+    <div style="margin-top:10px">
+      <div class="sim-progress"><div class="sim-progress-fill" id="simProg"></div></div>
+      <div class="phase-label">
+        <span id="phaseLeft">—</span>
+        <span id="phaseRight">0%</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Sim speed -->
+  <div>
+    <div class="slabel">Tốc độ mô phỏng</div>
+    <div style="display:flex;gap:5px;flex-wrap:wrap;margin-bottom:6px">
+      <button class="btn btn-ghost spdq" data-v="1"  style="flex:1;font-size:11px">1×</button>
+      <button class="btn btn-ghost spdq" data-v="5"  style="flex:1;font-size:11px">5×</button>
+      <button class="btn btn-ghost spdq" data-v="10" style="flex:1;font-size:11px">10×</button>
+      <button class="btn btn-ghost spdq" data-v="20" style="flex:1;font-size:11px">20×</button>
+      <button class="btn btn-ghost spdq" data-v="50" style="flex:1;font-size:11px">50×</button>
+    </div>
+    <div class="ctrl" style="display:flex;align-items:center;gap:8px">
+      <input type="range" id="simSpeedSlider" min="1" max="100" value="10" step="1" style="flex:1"
+        oninput="document.getElementById('simSpeedVal').textContent=this.value+'×'">
+      <span id="simSpeedVal" style="font-weight:bold;color:#4f7cff;min-width:36px;text-align:right">10×</span>
+    </div>
+    <button class="btn btn-primary" id="btnSimSpeed" style="width:100%;margin-top:6px">⚡ Áp dụng</button>
+  </div>
+
+  <!-- Speed limit -->
+  <div>
+    <div class="slabel">Giới hạn tốc độ (km/h)</div>
+    <div style="display:flex;flex-direction:column;gap:7px">
+      <div class="ctrl">
+        <label>Chiều A <span id="spdALbl">50</span></label>
+        <input type="range" id="spdA" min="10" max="80" step="5" value="50"
+          oninput="document.getElementById('spdALbl').textContent=this.value">
+      </div>
+      <div class="ctrl">
+        <label>Chiều B <span id="spdBLbl">50</span></label>
+        <input type="range" id="spdB" min="10" max="80" step="5" value="50"
+          oninput="document.getElementById('spdBLbl').textContent=this.value">
+      </div>
+      <button class="btn btn-ghost" id="btnSpd" disabled>↻ Áp dụng</button>
+    </div>
+  </div>
+
+  <!-- California algo thresholds -->
+  <div>
+    <div class="slabel">California Algorithm</div>
+    <div style="display:flex;flex-direction:column;gap:7px">
+      <div class="ctrl">
+        <label>Speed ratio ≤ <span id="srLbl">0.50</span></label>
+        <input type="range" id="srThr" min="0.1" max="0.9" step="0.05" value="0.5"
+          oninput="document.getElementById('srLbl').textContent=parseFloat(this.value).toFixed(2);updateThresh()">
+      </div>
+      <div class="ctrl">
+        <label>Occ diff ≥ <span id="odLbl">8</span>%</label>
+        <input type="range" id="odThr" min="3" max="40" step="1" value="8"
+          oninput="document.getElementById('odLbl').textContent=this.value;updateThresh()">
+      </div>
+      <div class="ctrl">
+        <label>Occ ratio ≤ <span id="orLbl">0.30</span></label>
+        <input type="range" id="orThr" min="0.1" max="0.9" step="0.05" value="0.3"
+          oninput="document.getElementById('orLbl').textContent=parseFloat(this.value).toFixed(2);updateThresh()">
+      </div>
+    </div>
+  </div>
+
+  <!-- Export -->
+  <div>
+    <div class="slabel">Xuất dữ liệu</div>
+    <div style="display:flex;flex-direction:column;gap:6px">
+      <button class="btn btn-csv" id="btnCsv" disabled>⬇ Xuất CSV</button>
+      <button class="btn btn-ghost" id="btnAnalysis" disabled>📊 Xem phân tích</button>
+    </div>
+  </div>
+
+</div><!-- /sidebar -->
+
+<!-- ══ MAIN ════════════════════════════════════════════════════════ -->
+<div class="main">
+
+  <div class="row2">
+    <!-- Canvas -->
+    <div class="canvas-panel">
+      <div class="cpanel-hdr">
+        <span class="cpanel-title">SUMO — Live Road (Top-Down)</span>
+        <span class="badge" id="incBadge">NO INCIDENT</span>
+      </div>
+      <div class="canvas-wrap">
+        <canvas id="roadCanvas"></canvas>
+        <div class="canvas-idle" id="canvasIdle">
+          <div class="canvas-idle-icon">⏸</div>
+          <div class="canvas-idle-txt">Kết nối server và nhấn<br><strong>BẮT ĐẦU MÔ PHỎNG</strong></div>
+        </div>
+      </div>
+      <div class="canvas-legend">
+        <span style="color:#e0e0e0">■ Bình thường</span>
+        <span style="color:#ff2222">■ Dừng/Tai nạn</span>
+        <span style="color:#00e5ff">□ Det A</span>
+        <span style="color:#ff9100">□ Det B</span>
+        <span style="color:#f0c040">— Dải phân cách</span>
+        <span id="vehCnt" style="margin-left:auto;color:var(--cyan)">0 xe</span>
+      </div>
+    </div>
+
+    <!-- Metrics + alerts -->
+    <div class="info-col">
+      <div class="mgrid">
+        <div class="mcard">
+          <div class="mlabel">Tốc độ TB — A</div>
+          <div class="mval blue" id="mSA">—</div>
+          <div class="msub">km/h</div>
+        </div>
+        <div class="mcard">
+          <div class="mlabel">Tốc độ TB — B</div>
+          <div class="mval blue" id="mSB">—</div>
+          <div class="msub">km/h</div>
+        </div>
+        <div class="mcard">
+          <div class="mlabel">Lưu lượng — A</div>
+          <div class="mval green" id="mFA">—</div>
+          <div class="msub">xe/phút (mid det)</div>
+        </div>
+        <div class="mcard">
+          <div class="mlabel">Lưu lượng — B</div>
+          <div class="mval green" id="mFB">—</div>
+          <div class="msub">xe/phút (mid det)</div>
+        </div>
+        <div class="mcard">
+          <div class="mlabel">Mật độ — A</div>
+          <div class="mval amber" id="mDA">—</div>
+          <div class="msub">xe/km/làn</div>
+        </div>
+        <div class="mcard">
+          <div class="mlabel">Mật độ — B</div>
+          <div class="mval amber" id="mDB">—</div>
+          <div class="msub">xe/km/làn</div>
+        </div>
+        <div class="mcard">
+          <div class="mlabel">Chiếm dụng — A</div>
+          <div class="mval" style="color:#27ae60" id="mOA">—</div>
+          <div class="msub">%</div>
+        </div>
+        <div class="mcard">
+          <div class="mlabel">Chiếm dụng — B</div>
+          <div class="mval" style="color:#27ae60" id="mOB">—</div>
+          <div class="msub">%</div>
+        </div>
+      </div>
+      <div class="alert-panel">
+        <div class="slabel" style="margin-bottom:5px">
+          Nhật ký &nbsp;<span class="badge" id="aCntBadge" style="font-size:9px">0</span>
+        </div>
+        <div class="alog" id="alog">
+          <div class="aitem"><span class="atime">--</span><span class="amsg">Chờ kết nối...</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Detectors -->
+  <div class="det-panel">
+    <div class="det-hdr">
+      <span class="det-title">Inductive Loop Detectors — Real-time</span>
+      <span style="font-size:10px;color:var(--muted)">up·mid·dn × 2 làn × 2 chiều</span>
+    </div>
+    <div class="det-body">
+      <div class="det-col">
+        <div class="det-col-hdr" style="color:var(--cyan)">→ CHIỀU A (West→East)</div>
+        <div class="det-grid" id="detA"></div>
+      </div>
+      <div class="det-col">
+        <div class="det-col-hdr" style="color:var(--amber)">← CHIỀU B (East→West)</div>
+        <div class="det-grid" id="detB"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Charts -->
+  <div class="charts-row">
+    <div class="chart-card">
+      <div class="chart-hdr">
+        <span class="chart-title">Tốc độ (km/h)</span>
+        <span style="font-size:10px;color:var(--muted)"><span style="color:var(--accent)">─</span>A <span style="color:var(--cyan)">─</span>B</span>
+      </div>
+      <div class="chart-body"><canvas id="spdChart"></canvas></div>
+    </div>
+    <div class="chart-card">
+      <div class="chart-hdr">
+        <span class="chart-title">Lưu lượng (xe/phút)</span>
+        <span style="font-size:10px;color:var(--muted)"><span style="color:var(--amber)">─</span>A <span style="color:var(--accent2)">─</span>B</span>
+      </div>
+      <div class="chart-body"><canvas id="flwChart"></canvas></div>
+    </div>
+    <div class="chart-card">
+      <div class="chart-hdr">
+        <span class="chart-title">Độ chiếm dụng (%)</span>
+        <span style="font-size:10px;color:var(--muted)"><span style="color:#27ae60">─</span>A <span style="color:#e74c3c">─</span>B</span>
+      </div>
+      <div class="chart-body"><canvas id="occChart"></canvas></div>
+    </div>
+  </div>
+
+</div><!-- /main -->
+</div><!-- /layout -->
+
+<!-- ══ ANALYSIS MODAL ══════════════════════════════════════════════ -->
+<div class="overlay" id="analysisOverlay">
+<div class="modal">
+  <button class="modal-close" onclick="closeAnalysis()">✕</button>
+  <div class="modal-title">📊 Phân tích kết quả mô phỏng</div>
+  <div class="modal-sub" id="anSub">So sánh giai đoạn bình thường vs có tai nạn</div>
+
+  <div class="analysis-grid" id="anGrid"></div>
+
+  <div class="an-chart-row">
+    <div class="an-chart-box">
+      <div class="an-chart-title">Tốc độ TB theo thời gian</div>
+      <div class="an-chart-body"><canvas id="anSpdChart"></canvas></div>
+    </div>
+    <div class="an-chart-box">
+      <div class="an-chart-title">Lưu lượng theo thời gian</div>
+      <div class="an-chart-body"><canvas id="anFlwChart"></canvas></div>
+    </div>
+    <div class="an-chart-box">
+      <div class="an-chart-title">Độ chiếm dụng theo thời gian</div>
+      <div class="an-chart-body"><canvas id="anOccChart"></canvas></div>
+    </div>
+  </div>
+
+  <div class="modal-footer">
+    <button class="btn btn-csv" id="btnCsvModal" style="width:auto;padding:8px 20px">⬇ Xuất CSV</button>
+    <button class="btn btn-ghost" onclick="closeAnalysis()" style="width:auto;padding:8px 20px">Đóng</button>
+  </div>
+</div>
+</div>
+
+<script>
+// ════════════════════════════════════════════════════════════════
+//  STATE
+// ════════════════════════════════════════════════════════════════
+let ws=null, wsOk=false;
+let simData={vehicles:[],detectors:{},stats:{},incidents:[],sim_time:0,phase:'idle',duration:300};
+let analysisData=null;
+let alertCnt=0, lastAlert='';
+let thresh={sr:.5,od:8,or:.3};   // od hạ xuống 8%, or hạ xuống 0.3 cho SUMO thật
+let simDuration=300;
+let csvRows=[];   // accumulate all rows for CSV export
+
+// ── Tracking detection delay & periodic alert ──
+let _incidentStartTime = null;      // t (sim) khi tai nạn xảy ra
+let _detectedTime      = null;      // t (sim) khi Cali phát hiện lần đầu
+let _detectedDir       = null;      // chiều bị phát hiện
+let _alertIntervalId   = null;      // setInterval cho cảnh báo mỗi 5s
+const CALI_GRACE_S     = 5.0;       // giây sim tối thiểu sau incident trước khi Cali được phép báo
+
+const canvas=document.getElementById('roadCanvas');
+const ctx=canvas.getContext('2d');
+const TOTAL_LEN=1000;
+
+// ════════════════════════════════════════════════════════════════
+//  WEBSOCKET
+// ════════════════════════════════════════════════════════════════
+function connect(){
+  if(ws && (ws.readyState===WebSocket.CONNECTING||ws.readyState===WebSocket.OPEN)){
+    console.log('[WS] Already connecting/connected, skip'); return;
+  }
+  const url=(document.getElementById('wsUrl').value||'').trim();
+  if(!url || !url.startsWith('ws')){
+    addAlert('URL WebSocket không hợp lệ: '+url,'danger'); return;
+  }
+  console.log('[WS] Connecting to', url);
+  setWs('connecting'); addAlert('Đang kết nối: '+url,'warn');
+  let _ws;
+  try{ _ws=new WebSocket(url); }
+  catch(e){
+    console.error('[WS] constructor error',e);
+    setWs('error'); addAlert('Không tạo được WebSocket: '+e.message,'danger'); return;
+  }
+  _ws.onopen=()=>{ console.log('[WS] onopen — socket open'); };
+  _ws.onmessage=e=>{
+    console.log('[WS] onmessage:', e.data.substring(0,80));
+    try{ handleMsg(JSON.parse(e.data)); }catch(err){ console.error('[WS] parse error:',err); }
+  };
+  _ws.onclose=e=>{
+    console.log('[WS] closed code='+e.code+' reason='+e.reason);
+    wsOk=false; setWs('disconnected');
+    if(e.code!==1000) addAlert('Mất kết nối (code='+e.code+').','warn');
+    setConnected(false);
+  };
+  _ws.onerror=e=>{ console.error('[WS] error',e); setWs('error'); addAlert('Lỗi WebSocket!','danger'); };
+  ws=_ws;
+}
+function disconnect(){ if(ws) ws.close(); }
+
+function setConnected(ok){
+  wsOk=ok;
+  document.getElementById('btnDisco').disabled=!ok;
+  document.getElementById('btnConn').disabled=ok;
+  document.getElementById('btnSimSpeed').disabled=!ok;
+  if(!ok){
+    document.getElementById('btnStart').disabled=true;
+    document.getElementById('btnStop').disabled=true;
+    document.getElementById('btnSpd').disabled=true;
+    document.getElementById('btnCsv').disabled=true;
+    document.getElementById('btnAnalysis').disabled=true;
+  } else {
+    document.getElementById('btnSpd').disabled=false;
+  }
+}
+
+function setWs(s){
+  const dot=document.getElementById('wsDot'),badge=document.getElementById('wsBadge');
+  if(!dot||!badge) return;
+  dot.className='wsdot '+s;
+  const L={connecting:'CONNECTING',connected:'CONNECTED',disconnected:'OFFLINE',error:'ERROR'};
+  // Chỉ cập nhật text node, KHÔNG dùng innerHTML để tránh xóa mất #wsDot
+  badge.lastChild && badge.lastChild.nodeType===3
+    ? (badge.lastChild.textContent=L[s]||s)
+    : badge.appendChild(document.createTextNode(L[s]||s));
+  // Xóa text node thừa nếu có
+  while(badge.childNodes.length>2) badge.removeChild(badge.lastChild);
+  badge.className='badge'+(s==='connected'?' green':s==='error'?' red':s==='connecting'?' amber':'');
+}
+
+// ════════════════════════════════════════════════════════════════
+//  MESSAGE HANDLER
+// ════════════════════════════════════════════════════════════════
+function handleMsg(m){
+  if(m.type==='connected'){
+    wsOk=true; setWs('connected');
+    setConnected(true);
+    updatePhaseUI('idle');
+    if(m.ready){
+      addAlert('Kết nối thành công! SUMO sẵn sàng.','ok');
+      document.getElementById('btnStart').disabled=false;
+    } else {
+      addAlert('Đã kết nối. Đang khởi động SUMO...','warn');
+      document.getElementById('btnStart').disabled=true;
+      document.getElementById('phaseBadge').textContent='LOADING';
+    }
+    return;
+  }
+  if(m.type==='server_ready'){
+    // state là object phía server, không dùng trong JS
+    document.getElementById('btnStart').disabled=false;
+    updatePhaseUI('idle');
+    const msg=m.traci_ok?'SUMO khởi động xong! Sẵn sàng mô phỏng.':'SUMO lỗi — chạy Demo mode.';
+    addAlert(msg, m.traci_ok?'ok':'warn');
+    return;
+  }
+  if(m.type==='sim_phase'){
+    onPhase(m); return;
+  }
+  if(m.type==='sim_update'){
+    onUpdate(m); return;
+  }
+  if(m.type==='sim_finished'){
+    onFinished(m); return;
+  }
+}
+
+// ════════════════════════════════════════════════════════════════
+//  PHASE EVENTS
+// ════════════════════════════════════════════════════════════════
+function onPhase(m){
+  updatePhaseUI(m.phase);
+  if(m.phase==='warmup'){
+    addAlert(`Mô phỏng bắt đầu! Tai nạn sẽ xảy ra lúc ~${m.incident_at?.toFixed(0)}s`,'info');
+    document.getElementById('canvasIdle').classList.add('hidden');
+    _detectionReported=false;
+    // Reset tracking
+    _incidentStartTime=null; _detectedTime=null; _detectedDir=null;
+    if(_alertIntervalId){ clearInterval(_alertIntervalId); _alertIntervalId=null; }
+  }
+  if(m.phase==='normal'){
+    addAlert('Giai đoạn bình thường — đang thu thập baseline...','info');
+  }
+  if(m.phase==='incident'){
+    const inc=m.incident;
+    _detectionReported=false;   // reset khi incident mới bắt đầu
+    // Ưu tiên lấy từ server gửi, fallback về inc.time hoặc sim_time hiện tại
+    _incidentStartTime = m.incident_time ?? inc?.time ?? simData.sim_time;
+    _detectedTime=null; _detectedDir=null;
+    addAlert(`⚠ TAI NẠN! Chiều ${inc.direction} tại ${(inc.position*100).toFixed(0)}% — chặn CẢ 2 LÀN`,'danger');
+    document.getElementById('incBadge').textContent=`⚠ Chiều ${inc.direction}`;
+    document.getElementById('incBadge').className='badge red pulsing';
+    simData.incidents=[inc];
+  }
+}
+
+function onFinished(m){
+  analysisData=m.analysis;
+  // Dừng cảnh báo interval khi mô phỏng xong
+  if(_alertIntervalId){ clearInterval(_alertIntervalId); _alertIntervalId=null; }
+  updatePhaseUI('finished');
+  addAlert('Mô phỏng hoàn thành! Xem phân tích bên dưới.','ok');
+  document.getElementById('btnStart').disabled=false;
+  document.getElementById('btnStop').disabled=true;
+  document.getElementById('btnAnalysis').disabled=false;
+  document.getElementById('btnCsv').disabled=false;
+  // Auto-show analysis
+  showAnalysis();
+}
+
+function updatePhaseUI(phase){
+  simData.phase=phase;
+  const pb=document.getElementById('phaseBadge');
+  const phaseMap={
+    idle:    ['IDLE',''],
+    warmup:  ['WARMUP','amber'],
+    normal:  ['BASELINE','cyan'],
+    incident:['INCIDENT','red'],
+    finished:['SELESAI','green'],
+  };
+  const [label,cls]=phaseMap[phase]||['—',''];
+  pb.textContent=label;
+  pb.className='badge'+(cls?' '+cls:'');
+
+  if(phase==='warmup'||phase==='normal'||phase==='incident'){
+    document.getElementById('btnStart').disabled=true;
+    document.getElementById('btnStop').disabled=false;
+  }
+  if(phase==='finished'||phase==='idle'){
+    document.getElementById('btnStop').disabled=true;
+  }
+  document.getElementById('phaseLeft').textContent=
+    {idle:'Chờ bắt đầu',warmup:'Warm-up',normal:'Baseline',incident:'Tai nạn',finished:'Xong'}[phase]||phase;
+}
+
+function caliIndicators(dir, detsObj){
+    const up = detsObj[`det_${dir}_up_L0`]||{};
+    const dn = detsObj[`det_${dir}_dn_L0`]||{};
+    const sUp=up.speed_kmh||0, sDn=dn.speed_kmh||0;
+    const oUp=up.occupancy||0, oDn=dn.occupancy||0;
+    const sr  = sUp>0 ? +(sDn/sUp).toFixed(3) : '';
+    const od  = +(oUp-oDn).toFixed(2);
+    const or_ = oUp>0 ? +((oUp-oDn)/oUp).toFixed(3) : '';  // cali.py: occ_diff/occ_up
+    const cond_spd = sr!=='' && sr<thresh.sr;
+    const cond_occ = od>thresh.od && or_!=='' && or_>thresh.or;
+    const alarm = (cond_spd || cond_occ) ? 1 : 0;
+    return {sr, od, or_, alarm};
+  }
+
+// ════════════════════════════════════════════════════════════════
+//  SIM UPDATE
+// ════════════════════════════════════════════════════════════════
+function onUpdate(m){
+  simData={...simData,...m};
+  const s=m.stats||{};
+  const t=m.sim_time, dur=m.duration||simDuration;
+
+  document.getElementById('clockEl').textContent=`t = ${t.toFixed(1)} / ${dur}s`;
+  document.getElementById('mSA').textContent=s.speed_A?.toFixed(1)??'—';
+  document.getElementById('mSB').textContent=s.speed_B?.toFixed(1)??'—';
+  document.getElementById('mFA').textContent=s.flow_A??'—';
+  document.getElementById('mFB').textContent=s.flow_B??'—';
+  document.getElementById('mDA').textContent=s.density_A?.toFixed(1)??'—';
+  document.getElementById('mDB').textContent=s.density_B?.toFixed(1)??'—';
+  document.getElementById('mOA').textContent=s.occ_A?.toFixed(1)??'—';
+  document.getElementById('mOB').textContent=s.occ_B?.toFixed(1)??'—';
+  document.getElementById('vehCnt').textContent=(m.vehicles||[]).length+' xe';
+
+  // Progress bar
+  const pct=Math.min(100,(t/dur*100));
+  document.getElementById('simProg').style.width=pct+'%';
+  document.getElementById('phaseRight').textContent=pct.toFixed(0)+'%';
+
+  // Incident badge
+  const hasInc=(m.incidents||[]).length>0;
+  if(!hasInc){
+    document.getElementById('incBadge').textContent='NO INCIDENT';
+    document.getElementById('incBadge').className='badge';
+  }
+
+  renderDetectors(m.detectors||{});
+  pushCharts(t,s);
+  runCali(s,m.detectors||{});
+  drawRoad(m.vehicles||[],m.incidents||[]);
+
+  // Accumulate CSV row — lưu đủ: time, phase, stats, detector từng làn, ngưỡng Cali, incident flag
+  const dets = m.detectors||{};
+  // hasInc đã được khai báo ở trên — dùng lại
+  const incDir = hasInc ? m.incidents[0].direction : '';
+  const incPos = hasInc ? m.incidents[0].position  : '';
+  // Tính California algo indicators cho chiều bị incident (hoặc cả 2)
+  const cA=caliIndicators('A', dets), cB=caliIndicators('B', dets);
+  csvRows.push({
+    t, phase: m.phase,
+    incident: hasInc?1:0, incident_dir: incDir, incident_pos: incPos,
+    // Tốc độ / lưu lượng / mật độ / occupancy cả 2 chiều
+    speed_A:s.speed_A, speed_B:s.speed_B,
+    flow_A:s.flow_A,   flow_B:s.flow_B,
+    density_A:s.density_A, density_B:s.density_B,
+    occ_A:s.occ_A, occ_B:s.occ_B,
+    count_A:s.count_A, count_B:s.count_B,
+    // Detector từng điểm + làn
+    ...Object.fromEntries(
+      ['A','B'].flatMap(dir=>
+        ['up','mid','dn'].flatMap(seg=>
+          [0,1].map(l=>{
+            const d=dets[`det_${dir}_${seg}_L${l}`]||{};
+            return [`det_${dir}_${seg}_L${l}_flow`, d.flow??''];
+          }).concat(
+          [0,1].map(l=>{
+            const d=dets[`det_${dir}_${seg}_L${l}`]||{};
+            return [`det_${dir}_${seg}_L${l}_spd`, d.speed_kmh??''];
+          })).concat(
+          [0,1].map(l=>{
+            const d=dets[`det_${dir}_${seg}_L${l}`]||{};
+            return [`det_${dir}_${seg}_L${l}_occ`, d.occupancy??''];
+          }))
+        )
+      )
+    ),
+    // Ngưỡng California
+    cali_thr_sr: thresh.sr, cali_thr_od: thresh.od, cali_thr_or: thresh.or,
+    // Chỉ số California từng chiều
+    cali_A_sr:cA.sr, cali_A_od:cA.od, cali_A_or:cA.or_, cali_A_alarm:cA.alarm,
+    cali_B_sr:cB.sr, cali_B_od:cB.od, cali_B_or:cB.or_, cali_B_alarm:cB.alarm,
+  });
+}
+
+// ════════════════════════════════════════════════════════════════
+//  DETECTORS
+// ════════════════════════════════════════════════════════════════
+function renderDetectors(dets){
+  ['A','B'].forEach(dir=>{
+    const grid=document.getElementById('det'+dir);
+    grid.innerHTML='';
+    const col=dir==='A'?'var(--cyan)':'var(--amber)';
+    ['up','mid','dn'].forEach(seg=>{
+      const posLabel={up:'200m',mid:'400m',dn:'900m'}[seg];
+      [0,1].forEach(lane=>{
+        const id=`det_${dir}_${seg}_L${lane}`;
+        const d=dets[id]||{};
+        const spd=d.speed_kmh>=0?d.speed_kmh?.toFixed(0)+' km/h':'—';
+        const el=document.createElement('div');
+        el.className='det-card';
+        el.innerHTML=`<div class="det-id" style="color:${col}">${posLabel} L${lane}</div>
+          <div class="det-val">${d.flow??0}<span style="font-size:9px;color:var(--muted)"> v</span></div>
+          <div class="det-sub">${spd}·${(d.occupancy??0).toFixed(1)}%</div>`;
+        grid.appendChild(el);
+      });
+    });
+  });
+}
+
+// ════════════════════════════════════════════════════════════════
+//  CALIFORNIA ALGORITHM
+// ════════════════════════════════════════════════════════════════
+function updateThresh(){
+  thresh.sr=parseFloat(document.getElementById('srThr').value);
+  thresh.od=parseFloat(document.getElementById('odThr').value);
+  thresh.or=parseFloat(document.getElementById('orThr').value);
+}
+let _detectionReported = false;   // chỉ báo server 1 lần
+let _lastPeriodicAlertT = -999;   // sim_time của lần alert periodic cuối
+
+function runCali(stats,dets){
+  ['A','B'].forEach(dir=>{
+    const up=dets[`det_${dir}_up_L0`]||{};
+    const dn=dets[`det_${dir}_dn_L0`]||{};
+    // speed: -1 = không có xe → coi là 0; null/undefined → unknown
+    const rawUp = up.speed_kmh;
+    const rawDn = dn.speed_kmh;
+    const sUp = (rawUp != null && rawUp >= 0) ? rawUp : (rawUp === -1 ? 0 : null);
+    const sDn = (rawDn != null && rawDn >= 0) ? rawDn : (rawDn === -1 ? 0 : null);
+    const oUp = up.occupancy||0, oDn = dn.occupancy||0;
+    // Cần ít nhất occupancy hợp lệ để tính; nếu không có gì thì skip
+    if(oUp === 0 && oDn === 0 && sUp === null) return;
+    // speed ratio: chỉ tính khi upstream thực sự có xe (speed >= 0)
+    // Nếu sUp=null hoặc -1 → không đủ data → sr=null → không trigger cond_spd
+    // sUp=0 (xe đứng yên tại detector) → sr=0 → trigger (đây là tắc thật)
+    const sr = (sUp !== null && sUp >= 0 && sDn !== null)
+             ? (sUp > 0 ? sDn / sUp : 0)
+             : null;
+    const od  = oUp - oDn;
+    const or_ = oUp > 0 ? (oUp - oDn) / oUp : 0;
+    if(Math.round(simData.sim_time*2)%10===0){
+      console.log(`[Cali ${dir}] sUp=${sUp} sDn=${sDn} SR=${sr?.toFixed(2)??'n/a'} OD=${od.toFixed(1)} OR=${or_.toFixed(2)} | thr: SR<${thresh.sr} OD>${thresh.od} OR>${thresh.or}`);
+    }
+    // California Algorithm: cond_speed OR cond_occ (khớp với cali.py)
+    // Guard 1: phải có xe upstream thực sự (oUp > 0.5%) — tránh false alarm lúc đường trống
+    const hasUpstreamData = oUp > 0.5;
+    // Guard 2: grace period — chờ ít nhất CALI_GRACE_S giây sau incident
+    //          tránh trigger ngay lập tức do data cũ từ bước trước incident
+    const pastGrace = _incidentStartTime === null
+                    || (simData.sim_time - _incidentStartTime) >= CALI_GRACE_S;
+    const cond_spd = hasUpstreamData && pastGrace && sr !== null && sr < thresh.sr;
+    const cond_occ = hasUpstreamData && pastGrace && od > thresh.od && or_ > thresh.or;
+    const isAlarm  = cond_spd || cond_occ;
+    if(isAlarm){
+      const t = simData.sim_time;
+
+      // ── Lần đầu phát hiện: tính delay và bắt đầu interval ──
+      if(!_detectionReported && (simData.incidents||[]).length > 0){
+        _detectionReported = true;
+        _detectedTime = t;
+        _detectedDir  = dir;
+
+        const delay = _incidentStartTime != null ? (t - _incidentStartTime).toFixed(1) : '?';
+        addAlert(
+          `🔍 [Cali] PHÁT HIỆN TAI NẠN chiều ${dir}! SR=${sr.toFixed(2)} OD=${od.toFixed(1)} — Độ trễ: ${delay}s`,
+          'danger'
+        );
+
+        // Gửi detection qua WebSocket (nhanh hơn fetch, không bị race condition với sim_finished)
+        if(ws && ws.readyState===WebSocket.OPEN){
+          ws.send(JSON.stringify({cmd:'incident_detected', sim_time: t, direction: dir}));
+          console.log('[Cali] Sent detection via WS t='+t+' dir='+dir);
+        } else {
+          // Fallback REST nếu WS không sẵn
+          fetch('/api/incident/detected',{
+            method:'POST',
+            headers:{'Content-Type':'application/json'},
+            body:JSON.stringify({sim_time: t, direction: dir})
+          }).catch(e=>console.error('[Cali] Fetch failed:',e));
+        }
+
+        // Bắt đầu cảnh báo lặp mỗi 5 giây thực
+        if(_alertIntervalId) clearInterval(_alertIntervalId);
+        _alertIntervalId = setInterval(()=>{
+          if((simData.incidents||[]).length === 0 || simData.phase==='finished'||simData.phase==='idle'){
+            clearInterval(_alertIntervalId); _alertIntervalId=null; return;
+          }
+          const curDelay = _incidentStartTime != null
+            ? (simData.sim_time - _incidentStartTime).toFixed(1) : '?';
+          // Force-push (bypass lastAlert dedup) bằng cách reset lastAlert
+          lastAlert = '';
+          addAlert(
+            `🚨 [CẢNH BÁO] TAI NẠN chiều ${_detectedDir||dir} đang diễn ra! `+
+            `Đã ${curDelay}s kể từ tai nạn | Phát hiện lúc t=${_detectedTime?.toFixed(1)}s`,
+            'danger'
+          );
+        }, 5000);
+
+      } else if(_detectionReported){
+        // Vẫn alarm — cập nhật CSV row theo (không thêm alert thêm, interval lo rồi)
+      }
+    }
+  });
+}
+
+// ════════════════════════════════════════════════════════════════
+//  CHARTS (real-time)
+// ════════════════════════════════════════════════════════════════
+const MAX_PTS=150;
+function mkChart(id,c1,c2){
+  return new Chart(document.getElementById(id).getContext('2d'),{
+    type:'line',
+    data:{labels:[],datasets:[
+      {data:[],borderColor:c1,backgroundColor:c1+'18',borderWidth:1.5,pointRadius:0,tension:.4,fill:true},
+      {data:[],borderColor:c2,backgroundColor:c2+'18',borderWidth:1.5,pointRadius:0,tension:.4,fill:true},
+    ]},
+    options:{responsive:true,maintainAspectRatio:false,animation:false,
+      plugins:{legend:{display:false}},
+      scales:{
+        x:{ticks:{color:'#6b7a99',font:{size:9},maxTicksLimit:8},grid:{color:'rgba(100,140,255,.06)'}},
+        y:{ticks:{color:'#6b7a99',font:{size:9}},grid:{color:'rgba(100,140,255,.06)'}},
+      }
+    }
+  });
+}
+const spdChart=mkChart('spdChart','#4f7cff','#30d5ff');
+const flwChart=mkChart('flwChart','#ffb547','#7b5ea7');
+const occChart=mkChart('occChart','#27ae60','#e74c3c');
+
+// Vertical line plugin for incident
+let incidentLineT=null;
+Chart.register({
+  id:'incidentLine',
+  afterDraw(chart){
+    if(!incidentLineT) return;
+    const idx=chart.data.labels.indexOf(incidentLineT.toFixed(0)+'s');
+    if(idx<0) return;
+    const x=chart.scales.x.getPixelForIndex(idx);
+    const {top,bottom}=chart.chartArea;
+    chart.ctx.save();
+    chart.ctx.strokeStyle='rgba(255,79,107,.7)';
+    chart.ctx.lineWidth=1.5;
+    chart.ctx.setLineDash([4,4]);
+    chart.ctx.beginPath();chart.ctx.moveTo(x,top);chart.ctx.lineTo(x,bottom);chart.ctx.stroke();
+    chart.ctx.setLineDash([]);
+    chart.ctx.fillStyle='rgba(255,79,107,.8)';
+    chart.ctx.font='bold 9px monospace';
+    chart.ctx.fillText('⚠',x-4,top+10);
+    chart.ctx.restore();
+  }
+});
+
+function pushCharts(t,s){
+  const lbl=t.toFixed(0)+'s';
+  function push(ch,v1,v2){
+    ch.data.labels.push(lbl);
+    ch.data.datasets[0].data.push(v1);
+    ch.data.datasets[1].data.push(v2);
+    if(ch.data.labels.length>MAX_PTS){
+      ch.data.labels.shift();
+      ch.data.datasets.forEach(d=>d.data.shift());
+    }
+    ch.update('none');
+  }
+  push(spdChart,s.speed_A,s.speed_B);
+  push(flwChart,s.flow_A,s.flow_B);
+  push(occChart,s.occ_A,s.occ_B);
+  // Mark incident time
+  if(simData.incidents?.length && !incidentLineT){
+    incidentLineT=simData.incidents[0].time||t;
+  }
+}
+
+// ════════════════════════════════════════════════════════════════
+//  ALERT LOG
+// ════════════════════════════════════════════════════════════════
+function addAlert(msg,cls=''){
+  if(msg===lastAlert) return;
+  lastAlert=msg; alertCnt++;
+  document.getElementById('aCntBadge').textContent=alertCnt;
+  const log=document.getElementById('alog');
+  const t=simData.sim_time||0;
+  const el=document.createElement('div');
+  el.className='aitem';
+  el.innerHTML=`<span class="atime">${t.toFixed(0)}s</span><span class="amsg ${cls}">${msg}</span>`;
+  log.prepend(el);
+  if(log.children.length>80) log.removeChild(log.lastChild);
+}
+
+// ════════════════════════════════════════════════════════════════
+//  ROAD CANVAS (SUMO-GUI top-down)
+// ════════════════════════════════════════════════════════════════
+function resizeCv(){
+  canvas.width=canvas.parentElement.clientWidth;
+  canvas.height=canvas.parentElement.clientHeight;
+}
+function drawRoad(vehicles,incidents){
+  resizeCv();
+  const W=canvas.width,H=canvas.height;
+  ctx.clearRect(0,0,W,H);
+  ctx.fillStyle='#2b2b2b'; ctx.fillRect(0,0,W,H);
+
+  const LW=28,ROAD_H=LW*4;
+  const rTop=Math.floor((H-ROAD_H)/2)-4;
+  const rBot=rTop+ROAD_H, midY=rTop+LW*2;
+
+  // Asphalt
+  const g=ctx.createLinearGradient(0,rTop,0,rBot);
+  g.addColorStop(0,'#4a4a4a');g.addColorStop(.5,'#3d3d3d');g.addColorStop(1,'#4a4a4a');
+  ctx.fillStyle=g; ctx.fillRect(0,rTop,W,ROAD_H);
+
+  // n2 marker at 50%
+  ctx.strokeStyle='rgba(100,140,255,.2)';ctx.lineWidth=1;ctx.setLineDash([4,4]);
+  ctx.beginPath();ctx.moveTo(W*.5,rTop-12);ctx.lineTo(W*.5,rBot+12);ctx.stroke();
+  ctx.setLineDash([]);
+  ctx.fillStyle='rgba(79,124,255,.65)';ctx.font='bold 9px "JetBrains Mono",monospace';
+  ctx.textAlign='center';ctx.fillText('n2',W*.5,rTop-3);
+
+  // n1/n3
+  ctx.textAlign='left';ctx.fillText('n1',4,rTop-3);
+  ctx.textAlign='right';ctx.fillText('n3',W-4,rTop-3);ctx.textAlign='left';
+
+  // Shoulder
+  ctx.strokeStyle='#ddd';ctx.lineWidth=2.5;ctx.setLineDash([]);
+  [rTop,rBot].forEach(y=>{ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(W,y);ctx.stroke();});
+
+  // Center divider
+  ctx.fillStyle='#4a3900';ctx.fillRect(0,midY-3,W,6);
+  ctx.strokeStyle='#f0c040';ctx.lineWidth=1.8;
+  [midY-2.5,midY+2.5].forEach(y=>{ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(W,y);ctx.stroke();});
+
+  // Lane dividers
+  ctx.strokeStyle='rgba(200,200,200,.4)';ctx.lineWidth=1.3;ctx.setLineDash([14,12]);
+  [rTop+LW,midY+LW].forEach(y=>{ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(W,y);ctx.stroke();});
+  ctx.setLineDash([]);
+
+  // Labels
+  ctx.font='bold 9px "JetBrains Mono",monospace';
+  ctx.fillStyle='rgba(48,213,255,.8)'; ctx.fillText('→ CHIỀU A',10,rTop-3+2);
+  ctx.fillStyle='rgba(255,145,0,.8)';  ctx.fillText('← CHIỀU B',10,rBot+13);
+
+  // Detectors A
+  [0.2,0.4,0.9].forEach(xf=>{
+    [0,1].forEach(li=>{
+      ctx.strokeStyle='#00e5ff';ctx.lineWidth=1.3;
+      ctx.strokeRect(xf*W-6,rTop+li*LW+4,12,LW-8);
+    });
+  });
+  // Detectors B (mirrored)
+  [0.8,0.6,0.1].forEach(xf=>{
+    [0,1].forEach(li=>{
+      ctx.strokeStyle='#ff9100';ctx.lineWidth=1.3;
+      ctx.strokeRect(xf*W-6,midY+li*LW+4,12,LW-8);
+    });
+  });
+
+  // Incidents
+  incidents.forEach(inc=>{
+    const iX=inc.position*W;
+    const zTop=inc.direction==='A'?rTop:midY+2;
+    const zH=LW*2-2;
+    const al=.15+.1*Math.sin(Date.now()/200);
+    ctx.fillStyle=`rgba(255,40,40,${al})`;ctx.fillRect(iX-60,zTop,120,zH);
+    ctx.save();
+    ctx.beginPath();ctx.rect(iX-60,zTop,120,zH);ctx.clip();
+    ctx.strokeStyle='rgba(255,100,0,.35)';ctx.lineWidth=4;ctx.setLineDash([8,8]);
+    for(let sx=iX-130;sx<iX+130;sx+=14){ctx.beginPath();ctx.moveTo(sx,zTop);ctx.lineTo(sx+zH,zTop+zH);ctx.stroke();}
+    ctx.setLineDash([]);ctx.restore();
+    ctx.fillStyle='#ff4040';ctx.font='bold 10px "JetBrains Mono",monospace';
+    ctx.textAlign='center';
+    ctx.fillText('⚠ INCIDENT — CẢ 2 LÀN',iX,zTop+zH/2+4);
+    ctx.textAlign='left';
+  });
+
+  // Vehicles
+  vehicles.forEach(v=>{
+    const laneOff=v.dir==='A'?0:2;
+    const lane=Math.min(v.lane??0,1);
+    const cy=rTop+(laneOff+lane)*LW+LW/2;
+    const xPx=v.dir==='A'?v.x*W:(1-v.x)*W;
+    const isTruck=v.vtype==='truck';
+    const vL=isTruck?34:20, vW=isTruck?10:8;
+    const bodyCol=v.color||'#3a7bd5';
+    const roofCol=darken(bodyCol,.55);
+
+    ctx.save();
+    ctx.translate(xPx,cy);
+    ctx.rotate(v.dir==='A'?0:Math.PI);
+    ctx.shadowColor=v.speed_kmh<1?'rgba(255,40,40,.8)':'rgba(0,0,0,.4)';
+    ctx.shadowBlur=v.speed_kmh<1?10:3;
+    ctx.fillStyle=bodyCol;
+    rrect(ctx,-vL/2,-vW/2,vL,vW,2);ctx.fill();
+    ctx.shadowBlur=0;
+    if(isTruck){
+      ctx.fillStyle=roofCol;ctx.fillRect(-vL/2+1,-vW/2+1,vL*.28,vW-2);
+      ctx.fillStyle='#a0a0a0';ctx.fillRect(-vL/2+vL*.32,-vW/2+1,vL*.64,vW-2);
+    } else {
+      const rx=-vL/2+vL*.22,rw=vL*.44,rh=vW*.6,ry=-rh/2;
+      ctx.fillStyle=roofCol;rrect(ctx,rx,ry,rw,rh,1.5);ctx.fill();
+    }
+    ctx.fillStyle=v.speed_kmh<1?'rgba(255,80,80,.9)':'rgba(255,255,200,.95)';
+    ctx.fillRect(vL/2-2,-vW/2+1,2,2.5);ctx.fillRect(vL/2-2,vW/2-3.5,2,2.5);
+    ctx.fillStyle='rgba(255,50,50,.8)';
+    ctx.fillRect(-vL/2,-vW/2+1,2,2.5);ctx.fillRect(-vL/2,vW/2-3.5,2,2.5);
+    ctx.restore();
+  });
+}
+function rrect(c,x,y,w,h,r){
+  c.beginPath();c.moveTo(x+r,y);c.lineTo(x+w-r,y);c.quadraticCurveTo(x+w,y,x+w,y+r);
+  c.lineTo(x+w,y+h-r);c.quadraticCurveTo(x+w,y+h,x+w-r,y+h);
+  c.lineTo(x+r,y+h);c.quadraticCurveTo(x,y+h,x,y+h-r);
+  c.lineTo(x,y+r);c.quadraticCurveTo(x,y,x+r,y);c.closePath();
+}
+function darken(hex,f){
+  const r=parseInt(hex.slice(1,3),16),g=parseInt(hex.slice(3,5),16),b=parseInt(hex.slice(5,7),16);
+  return `rgb(${Math.round(r*f)},${Math.round(g*f)},${Math.round(b*f)})`;
+}
+(function animLoop(){drawRoad(simData.vehicles||[],simData.incidents||[]);requestAnimationFrame(animLoop);})();
+
+// ════════════════════════════════════════════════════════════════
+//  ANALYSIS MODAL
+// ════════════════════════════════════════════════════════════════
+let anSpdChart=null, anFlwChart=null, anOccChart=null;
+
+function showAnalysis(){
+  if(!analysisData) return;
+  const a = analysisData;
+  const dir = a.incident_dir;
+  const sk = a.spd_key, fk = a.flow_key, dk = a.den_key, ok = a.occ_key;
+  const n = a.normal, inc = a.incident, cmp = a.comparison;
+
+  // Timing info
+  const incT  = a.incident_time;
+  const detT  = a.detection_time;
+  const delay = a.detection_delay;
+  const fmtT  = v => v!=null ? v.toFixed(1)+'s' : '—';
+  const fmtD  = v => v!=null ? `${v.toFixed(1)}s` : 'Chưa phát hiện';
+
+  document.getElementById('anSub').textContent =
+    `Chiều bị tai nạn: ${dir} · vị trí ${(a.incident_pos*100).toFixed(0)}% · `+
+    `${n.samples||0} mẫu BT · ${inc.samples||0} mẫu tai nạn`;
+
+  // Timing cards
+  const timingHtml = `
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:12px 0;font-family:monospace">
+      <div style="background:#1a2035;border:1px solid rgba(255,183,71,.3);border-radius:8px;padding:10px;text-align:center">
+        <div style="font-size:10px;color:#6b7a99;margin-bottom:4px">⏱ THỜI ĐIỂM TAI NẠN</div>
+        <div style="font-size:18px;font-weight:bold;color:#ffb547">${fmtT(incT)}</div>
+      </div>
+      <div style="background:#1a2035;border:1px solid rgba(255,79,107,.3);border-radius:8px;padding:10px;text-align:center">
+        <div style="font-size:10px;color:#6b7a99;margin-bottom:4px">🔍 THỜI ĐIỂM PHÁT HIỆN</div>
+        <div style="font-size:18px;font-weight:bold;color:#ff4f6b">${fmtT(detT)}</div>
+      </div>
+      <div style="background:#1a2035;border:1px solid ${delay!=null?'rgba(45,255,155,.3)':'rgba(100,100,100,.3)'};border-radius:8px;padding:10px;text-align:center">
+        <div style="font-size:10px;color:#6b7a99;margin-bottom:4px">⚡ ĐỘ TRỄ PHÁT HIỆN</div>
+        <div style="font-size:18px;font-weight:bold;color:${delay!=null?'#2dff9b':'#6b7a99'}">${fmtD(delay)}</div>
+      </div>
+    </div>`;
+  // Chèn timing vào trước anGrid
+  const anGridEl = document.getElementById('anGrid');
+  let timingEl = document.getElementById('anTiming');
+  if(!timingEl){ timingEl=document.createElement('div'); timingEl.id='anTiming'; anGridEl.before(timingEl); }
+  timingEl.innerHTML = timingHtml;
+
+  // Cards — chỉ chiều bị tai nạn
+  const metrics=[
+    {key:sk, label:`Tốc độ TB chiều ${dir}`,  unit:'km/h',       higherBetter:true},
+    {key:fk, label:`Lưu lượng chiều ${dir}`,  unit:'xe/phút',    higherBetter:true},
+    {key:dk, label:`Mật độ chiều ${dir}`,      unit:'xe/km/làn',  higherBetter:false},
+    {key:ok, label:`Occupancy chiều ${dir}`,   unit:'%',          higherBetter:false},
+  ];
+  const grid=document.getElementById('anGrid');
+  grid.innerHTML='';
+  metrics.forEach(m=>{
+    const pct=cmp[m.key]||0;
+    const isGood=(m.higherBetter&&pct>=0)||(!m.higherBetter&&pct<=0);
+    const pctCls=pct===0?'neu':isGood?'pos':'neg';
+    const sign=pct>0?'+':'';
+    const card=document.createElement('div');
+    card.className='an-card';
+    card.innerHTML=`
+      <div class="an-label">${m.label}</div>
+      <div class="an-normal">Bình thường: <strong>${(n[m.key]||0).toFixed(2)} ${m.unit}</strong></div>
+      <div class="an-incident">Tai nạn: <strong>${(inc[m.key]||0).toFixed(2)} ${m.unit}</strong></div>
+      <div class="an-pct ${pctCls}">${sign}${pct}%</div>`;
+    grid.appendChild(card);
+  });
+
+  // Charts — chỉ vẽ chiều bị tai nạn, so sánh baseline vs incident theo thời gian
+  const hn=a.history_normal||[], hi=a.history_incident||[];
+
+  function buildAnChart(canvasId, key, colorN, colorI, ylabel){
+    const el=document.getElementById(canvasId);
+    if(el._chart){ el._chart.destroy(); el._chart=null; }
+    // Dùng index làm trục X — 2 phase có độ dài khác nhau, normalize về giây offset
+    const tStartN = hn.length ? hn[0].t : 0;
+    const tStartI = hi.length ? hi[0].t : 0;
+    const dataN = hn.map(r=>({x: +(r.t-tStartN).toFixed(1), y: r[key]??null}));
+    const dataI = hi.map(r=>({x: +(r.t-tStartI).toFixed(1), y: r[key]??null}));
+    el._chart=new Chart(el.getContext('2d'),{
+      type:'line',
+      data:{
+        datasets:[
+          {label:'Bình thường', data:dataN, borderColor:colorN, backgroundColor:colorN+'25',
+           borderWidth:2, pointRadius:0, tension:.3, fill:true},
+          {label:'Tai nạn',    data:dataI, borderColor:colorI, backgroundColor:colorI+'25',
+           borderWidth:2, pointRadius:0, tension:.3, fill:true},
+        ]
+      },
+      options:{
+        responsive:true, maintainAspectRatio:false, animation:false,
+        parsing:false,
+        plugins:{
+          legend:{display:true,labels:{color:'#e8edf8',font:{size:10},boxWidth:12}},
+          tooltip:{mode:'index',intersect:false,
+            callbacks:{title:items=>'t+'+items[0].parsed.x+'s'}},
+        },
+        scales:{
+          x:{type:'linear', ticks:{color:'#6b7a99',font:{size:8},maxTicksLimit:10,
+               callback:v=>v+'s'}, grid:{color:'rgba(100,140,255,.06)'},
+             title:{display:true,text:'Giây kể từ đầu phase',color:'#6b7a99',font:{size:9}}},
+          y:{ticks:{color:'#6b7a99',font:{size:9}}, grid:{color:'rgba(100,140,255,.06)'},
+             title:{display:true,text:ylabel,color:'#6b7a99',font:{size:9}}},
+        }
+      }
+    });
+  }
+
+  buildAnChart('anSpdChart', sk, '#4f7cff','#ff4f6b',`Tốc độ (km/h) — Chiều ${dir}`);
+  buildAnChart('anFlwChart', fk, '#2dff9b','#ffb547',`Lưu lượng — Chiều ${dir}`);
+  buildAnChart('anOccChart', ok, '#27ae60','#e74c3c',`Độ chiếm dụng (%) — Chiều ${dir}`);
+
+  document.getElementById('analysisOverlay').classList.add('show');
+}
+
+function closeAnalysis(){
+  document.getElementById('analysisOverlay').classList.remove('show');
+}
+
+// ════════════════════════════════════════════════════════════════
+//  CSV EXPORT
+// ════════════════════════════════════════════════════════════════
+function exportCSV(){
+  if(!csvRows.length){
+    addAlert('Chưa có dữ liệu để xuất — hãy chạy mô phỏng trước.','warn'); return;
+  }
+
+  // Lấy tất cả headers từ row đầu tiên (dynamic — bao gồm detector columns)
+  const headers = Object.keys(csvRows[0]);
+  const rows = [headers.join(',')];
+  csvRows.forEach(r=>{
+    rows.push(headers.map(h=>{
+      const v = r[h];
+      return v===undefined||v===null ? '' : v;
+    }).join(','));
+  });
+
+  // Phần phân tích tóm tắt — chỉ chiều bị tai nạn
+  if(analysisData){
+    const a = analysisData;
+    const dir = a.incident_dir;
+    const sk = a.spd_key, fk = a.flow_key, dk = a.den_key, ok = a.occ_key;
+    const n = a.normal, inc = a.incident, cmp = a.comparison;
+    rows.push('');
+    rows.push('=== TÓM TẮT PHÂN TÍCH ===');
+    rows.push(`Chiều bị tai nạn,${dir}`);
+    rows.push(`Vị trí tai nạn,${(a.incident_pos*100).toFixed(0)}%`);
+    rows.push(`Số mẫu bình thường,${n.samples||0}`);
+    rows.push(`Số mẫu giai đoạn tai nạn,${inc.samples||0}`);
+    rows.push('');
+    rows.push(`Chỉ số (Chiều ${dir}),Bình thường,Tai nạn,Thay đổi (%)`);
+    [
+      [`Tốc độ TB (km/h)`, sk],
+      [`Lưu lượng TB (xe/phút)`, fk],
+      [`Mật độ TB (xe/km/làn)`, dk],
+      [`Occupancy TB (%)`, ok],
+    ].forEach(([label,key])=>{
+      rows.push(`${label},${(n[key]||0).toFixed(2)},${(inc[key]||0).toFixed(2)},${(cmp[key]||0).toFixed(1)}%`);
+    });
+    rows.push('');
+    rows.push('=== THỜI GIAN PHÁT HIỆN ===');
+    rows.push(`Thời điểm tai nạn (s),${a.incident_time!=null?a.incident_time.toFixed(1):'—'}`);
+    rows.push(`Thời điểm phát hiện (s),${a.detection_time!=null?a.detection_time.toFixed(1):'—'}`);
+    rows.push(`Độ trễ phát hiện (s),${a.detection_delay!=null?a.detection_delay.toFixed(1):'Chưa phát hiện'}`);
+    rows.push('');
+    rows.push('=== NGƯỠNG CALIFORNIA ALGORITHM ===');
+    rows.push(`Speed ratio threshold,${thresh.sr}`);
+    rows.push(`Occupancy diff threshold,${thresh.od}%`);
+    rows.push(`Occupancy ratio threshold,${thresh.or}`);
+  }
+
+  // BOM ở đầu content (không phải mime) để Excel đọc UTF-8 đúng
+  const bom  = '\uFEFF';
+  const blob = new Blob([bom + rows.join('\n')], {type:'text/csv;charset=utf-8'});
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement('a');
+  a.href=url;
+  a.download=`sumo_its_${new Date().toISOString().slice(0,19).replace(/:/g,'-')}.csv`;
+  a.style.display='none';
+  document.body.appendChild(a);
+  a.click();
+  setTimeout(()=>{ document.body.removeChild(a); URL.revokeObjectURL(url); }, 1000);
+  addAlert(`Đã xuất CSV — ${csvRows.length} dòng dữ liệu!`,'ok');
+}
+
+// ════════════════════════════════════════════════════════════════
+//  CONTROLS
+// ════════════════════════════════════════════════════════════════
+document.getElementById('btnConn').onclick=connect;
+document.getElementById('btnDisco').onclick=disconnect;
+
+document.getElementById('btnStart').onclick=()=>{
+  if(!wsOk) return;
+  simDuration=parseInt(document.getElementById('simDuration').value)||300;
+  incidentLineT=null;
+  // Reset charts
+  [spdChart,flwChart,occChart].forEach(ch=>{
+    ch.data.labels=[];
+    ch.data.datasets.forEach(d=>d.data=[]);
+    ch.update('none');
+  });
+  document.getElementById('incBadge').textContent='NO INCIDENT';
+  document.getElementById('incBadge').className='badge';
+  document.getElementById('btnAnalysis').disabled=true;
+  document.getElementById('btnCsv').disabled=true;
+  analysisData=null; csvRows=[];
+  // Reset detection tracking
+  _incidentStartTime=null; _detectedTime=null; _detectedDir=null;
+  _detectionReported=false;
+  if(_alertIntervalId){ clearInterval(_alertIntervalId); _alertIntervalId=null; }
+  ws.send(JSON.stringify({cmd:'start',duration:simDuration}));
+  addAlert(`Bắt đầu mô phỏng ${simDuration}s...`,'info');
+};
+
+document.getElementById('btnStop').onclick=()=>{
+  if(!wsOk) return;
+  ws.send(JSON.stringify({cmd:'stop'}));
+  addAlert('Đã dừng mô phỏng.','warn');
+  updatePhaseUI('idle');
+  if(_alertIntervalId){ clearInterval(_alertIntervalId); _alertIntervalId=null; }
+};
+
+// ── Sim speed controls ──
+function applySimSpeed(v){
+  v = Math.max(1, Math.min(200, parseInt(v)||10));
+  document.getElementById('simSpeedSlider').value = v;
+  document.getElementById('simSpeedVal').textContent = v+'×';
+  // Highlight active quick button
+  document.querySelectorAll('.spdq').forEach(b=>
+    b.style.borderColor = b.dataset.v==v ? 'var(--accent)' : ''
+  );
+  fetch('/set_sim_speed',{
+    method:'POST',
+    headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({speed:v})
+  }).then(r=>r.json())
+    .then(d=>{ addAlert(`Tốc độ mô phỏng: ${d.sim_speed}×`,'ok'); })
+    .catch(e=>{ console.error('set_sim_speed failed',e); addAlert('Server chưa sẵn sàng','warn'); });
+}
+document.getElementById('btnSimSpeed').onclick=()=>
+  applySimSpeed(document.getElementById('simSpeedSlider').value);
+
+document.querySelectorAll('.spdq').forEach(btn=>
+  btn.addEventListener('click',()=>applySimSpeed(btn.dataset.v))
+);
+
+
+document.getElementById('btnSpd').onclick=()=>{
+  if(!wsOk) return;
+  ['A','B'].forEach(d=>{
+    const v=parseInt(document.getElementById(`spd${d}`).value);
+    ws.send(JSON.stringify({cmd:'set_speed',direction:d,speed_kmh:v}));
+  });
+  addAlert(`Áp dụng tốc độ A=${document.getElementById('spdA').value} B=${document.getElementById('spdB').value} km/h`,'warn');
+};
+
+document.getElementById('btnAnalysis').onclick=showAnalysis;
+document.getElementById('btnCsv').onclick=exportCSV;
+document.getElementById('btnCsvModal').onclick=exportCSV;
+
+// Close overlay on background click
+document.getElementById('analysisOverlay').onclick=e=>{
+  if(e.target===e.currentTarget) closeAnalysis();
+};
+
+// Init
+drawRoad([],[]);
+
+// Auto-connect nếu đang chạy qua localhost (không phải file://)
+(function autoConnect(){
+  const isFile = location.protocol === 'file:';
+  if(isFile){
+    addAlert('⚠ PHẢI mở qua http://localhost:8000 — không dùng file://!','danger');
+    // Hiện banner lớn che toàn màn hình
+    document.body.insertAdjacentHTML('afterbegin',`
+      <div style="position:fixed;inset:0;background:rgba(10,14,26,.97);z-index:99999;display:flex;flex-direction:column;align-items:center;justify-content:center;font-family:monospace;color:#fff;gap:24px">
+        <div style="font-size:48px">🚫</div>
+        <div style="font-size:22px;font-weight:bold;color:#ff4f6b">KHÔNG THỂ CHẠY QUA FILE://</div>
+        <div style="color:#aab">WebSocket bị chặn khi mở file trực tiếp từ thư mục.</div>
+        <div style="background:#1a2035;border:1px solid #4f7cff;border-radius:8px;padding:20px 40px;text-align:center">
+          <div style="color:#6b7a99;margin-bottom:8px">Hãy mở trang bằng cách này:</div>
+          <a href="http://localhost:8000" style="font-size:20px;color:#4f7cff;font-weight:bold;text-decoration:none">
+            🌐 http://localhost:8000
+          </a>
+        </div>
+        <div style="color:#6b7a99;font-size:13px">Server phải đang chạy: <code style="color:#2dff9b">python sumo_server.py</code></div>
+      </div>
+    `);
+    return;
+  }
+  const isLocal = location.hostname==='localhost'||location.hostname==='127.0.0.1';
+  if(isLocal){
+    const wsUrl = `ws://${location.host}/ws`;
+    const sel = document.getElementById('wsUrl');
+    let found = false;
+    for(let i=0;i<sel.options.length;i++){
+      if(sel.options[i].value===wsUrl){ sel.selectedIndex=i; found=true; break; }
+    }
+    if(!found){
+      const opt=document.createElement('option');
+      opt.value=wsUrl; opt.textContent=wsUrl;
+      sel.insertBefore(opt,sel.firstChild);
+      sel.selectedIndex=0;
+    }
+    console.log('[autoConnect] url=', document.getElementById('wsUrl').value);
+    addAlert('Tự động kết nối...','info');
+    setTimeout(connect, 250);
+  } else {
+    addAlert('Nhấn KẾT NỐI để bắt đầu.','');
+  }
+})();
+</script>
+</body>
+</html>

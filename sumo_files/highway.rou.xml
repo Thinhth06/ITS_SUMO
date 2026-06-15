@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Routes: Continuous vehicle flow on edgeA (East) and edgeB (West)
+  Vehicle types: car, truck, bus
+-->
+<routes xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:noNamespaceSchemaLocation="http://sumo.dlr.de/xsd/routes_file.xsd">
+
+  <!-- Vehicle types -->
+  <vType id="car"   accel="2.6" decel="4.5" sigma="0.5" length="4.5"  minGap="2.5" maxSpeed="33.33" guiShape="passenger"   color="0.3,0.5,0.9"/>
+  <vType id="car2"  accel="2.6" decel="4.5" sigma="0.5" length="4.5"  minGap="2.5" maxSpeed="33.33" guiShape="passenger"   color="0.9,0.2,0.2"/>
+  <vType id="car3"  accel="2.6" decel="4.5" sigma="0.5" length="4.5"  minGap="2.5" maxSpeed="33.33" guiShape="passenger"   color="0.1,0.7,0.3"/>
+  <vType id="car4"  accel="2.6" decel="4.5" sigma="0.5" length="4.5"  minGap="2.5" maxSpeed="33.33" guiShape="passenger"   color="0.9,0.6,0.1"/>
+  <vType id="truck" accel="1.5" decel="3.5" sigma="0.4" length="10.0" minGap="3.0" maxSpeed="25.00" guiShape="truck"       color="0.7,0.7,0.7"/>
+  <vType id="bus"   accel="1.8" decel="3.8" sigma="0.4" length="12.0" minGap="3.0" maxSpeed="22.22" guiShape="bus"        color="0.95,0.8,0.1"/>
+
+  <!-- Routes -->
+  <route id="routeA" edges="edgeA"/>
+  <route id="routeB" edges="edgeB"/>
+
+  <!-- Flows: Direction A (East) -->
+  <flow id="flowA_car"   type="car"   route="routeA" begin="0"  end="3600" vehsPerHour="600" departLane="random" departSpeed="random"/>
+  <flow id="flowA_car2"  type="car2"  route="routeA" begin="0"  end="3600" vehsPerHour="300" departLane="random" departSpeed="random"/>
+  <flow id="flowA_car3"  type="car3"  route="routeA" begin="0"  end="3600" vehsPerHour="200" departLane="random" departSpeed="random"/>
+  <flow id="flowA_car4"  type="car4"  route="routeA" begin="5"  end="3600" vehsPerHour="200" departLane="random" departSpeed="random"/>
+  <flow id="flowA_truck" type="truck" route="routeA" begin="10" end="3600" vehsPerHour="100" departLane="random" departSpeed="random"/>
+  <flow id="flowA_bus"   type="bus"   route="routeA" begin="15" end="3600" vehsPerHour="60"  departLane="random" departSpeed="random"/>
+
+  <!-- Flows: Direction B (West) -->
+  <flow id="flowB_car"   type="car"   route="routeB" begin="0"  end="3600" vehsPerHour="550" departLane="random" departSpeed="random"/>
+  <flow id="flowB_car2"  type="car2"  route="routeB" begin="0"  end="3600" vehsPerHour="250" departLane="random" departSpeed="random"/>
+  <flow id="flowB_car3"  type="car3"  route="routeB" begin="5"  end="3600" vehsPerHour="200" departLane="random" departSpeed="random"/>
+  <flow id="flowB_car4"  type="car4"  route="routeB" begin="5"  end="3600" vehsPerHour="180" departLane="random" departSpeed="random"/>
+  <flow id="flowB_truck" type="truck" route="routeB" begin="10" end="3600" vehsPerHour="90"  departLane="random" departSpeed="random"/>
+  <flow id="flowB_bus"   type="bus"   route="routeB" begin="20" end="3600" vehsPerHour="50"  departLane="random" departSpeed="random"/>
+
+</routes>

@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Induction Loop Detectors — road4lane
+  Chiều A (West→East): edge_A1[0-500m] → edge_A2[500-1000m]
+  Chiều B (East→West): edge_B1[0-500m từ n3] → edge_B2[500-1000m từ n3]
+
+  Đặt detector:
+    up  = 100m  → trước vùng tai nạn (300-700m)
+    mid = 350m  → giữa đường (thống kê lưu lượng)
+    dn  = 750m  → sau vùng tai nạn
+  
+  Thuật toán California so sánh up vs dn:
+    upstream tắc (occ cao, speed thấp) + downstream thông (occ thấp)
+    → INCIDENT DETECTED
+-->
+<additional>
+    <!-- ═══ CHIỀU A (→ East): up=100m, mid=350m, dn=750m ═══ -->
+    <inductionLoop id="det_A_up_L0"  lane="edge_A1_0" pos="100" freq="1" file="NUL"/>
+    <inductionLoop id="det_A_up_L1"  lane="edge_A1_1" pos="100" freq="1" file="NUL"/>
+    <inductionLoop id="det_A_mid_L0" lane="edge_A1_0" pos="350" freq="1" file="NUL"/>
+    <inductionLoop id="det_A_mid_L1" lane="edge_A1_1" pos="350" freq="1" file="NUL"/>
+    <inductionLoop id="det_A_dn_L0"  lane="edge_A2_0" pos="250" freq="1" file="NUL"/>
+    <inductionLoop id="det_A_dn_L1"  lane="edge_A2_1" pos="250" freq="1" file="NUL"/>
+
+    <!-- ═══ CHIỀU B (← West): up=100m từ n3, mid=350m, dn=250m trên edge_B2 ═══ -->
+    <inductionLoop id="det_B_up_L0"  lane="edge_B1_0" pos="100" freq="1" file="NUL"/>
+    <inductionLoop id="det_B_up_L1"  lane="edge_B1_1" pos="100" freq="1" file="NUL"/>
+    <inductionLoop id="det_B_mid_L0" lane="edge_B1_0" pos="350" freq="1" file="NUL"/>
+    <inductionLoop id="det_B_mid_L1" lane="edge_B1_1" pos="350" freq="1" file="NUL"/>
+    <inductionLoop id="det_B_dn_L0"  lane="edge_B2_0" pos="250" freq="1" file="NUL"/>
+    <inductionLoop id="det_B_dn_L1"  lane="edge_B2_1" pos="250" freq="1" file="NUL"/>
+</additional>

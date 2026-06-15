@@ -1,0 +1,11 @@
+<configuration>
+    <input>
+        <net-file value="road4lane_net.xml"/>
+        <route-files value="road4lane_rou.xml"/>
+        <additional-files value="road4lane_det.xml"/>
+    </input>
+    <time>
+        <begin value="0"/>
+        <end value="9999"/>
+    </time>
+</configuration>
